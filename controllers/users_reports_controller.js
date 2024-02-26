@@ -21,11 +21,11 @@ var myProfile = async (req, res) => {
 
 
 const getEmplyeesLocation = async (req, res, next) => {
-    // var isManager = author.OnlyManager(req, res);
+    var isManager = author.OnlyManager(req, res);
 
-    // if (isManager.resultStatus != consts.ResultStatus.ok) {
-    //     return res.status(isManager.resultStatus).json(isManager);
-    // }
+    if (isManager.resultStatus != consts.ResultStatus.ok) {
+        return res.status(isManager.resultStatus).json(isManager);
+    }
 
 
     const user = req.body.user;
@@ -54,6 +54,11 @@ const getEmplyeesLocation = async (req, res, next) => {
                     [Op.in]: regionsId
                 },
                 required:true
+            },
+            {
+                model: UserSocket,
+                as: "socket",
+                required:false
             }
         ],
         order: [['createdAt', 'DESC']]

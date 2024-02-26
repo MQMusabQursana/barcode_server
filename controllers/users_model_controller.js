@@ -223,9 +223,11 @@ const access = async (req, res) => {
         email: Joi.string().email().required(),
         role: Joi.string().required(),
         token: Joi.string().required(),
-        regions: Joi.array().required(),
+        regions: Joi.array().allow(),
         user: Joi.allow()
     });
+
+  
 
     const { error } = schema.validate(req.body);
 
@@ -240,7 +242,7 @@ const access = async (req, res) => {
 
 
     var zonesParams = [];
-    for (var i = 0; i < regions.length; i++) {
+    for (var i = 0; i < (regions??[]).length; i++) {
         var zone = regions[i];
         zonesParams.push({
             user_id: id,

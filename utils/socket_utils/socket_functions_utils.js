@@ -7,6 +7,7 @@ const UserLocation = sequelizeDb.userLocation;
 const functionsUtils = require("../function_utils");
 const Joi = require('joi');
 const SocketRooms = require('./socket_rooms');
+const SocketEvents = require('./socket_events');
 
 
 var saveUserSocketId = async function (user_id, room, socket_id) {
@@ -54,6 +55,11 @@ var disconnectUserSocket = async function (userId) {
         resultStatus: consts.ResultStatus.ok,
       };
       console.log("disconnectUserSocket -> done -> " + JSON.stringify(returnValue));
+
+      const socketIO = require("./socket_server").getio();
+      socketIO.in(SocketRooms.managers).emit(SocketEvents.onUserLostConnection, { user_id: userId, });
+      console.log("sent in SocketRooms.managers -> " + JSON.stringify({ user_id: userId }));
+
       resolve(returnValue);
     }).catch((error) => {
       const returnValue = {

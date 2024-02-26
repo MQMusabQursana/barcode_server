@@ -7,11 +7,15 @@ const SocketDataValidator = require("./socket_data_validator");
 const AuthMiddleware = require("../../middlewares/auth_middleware");
 const SocketMiddleware = require("../../middlewares/socket_middleware");
 const { Server } = require("socket.io");
-
+const  sequelizeDb = require("../../dbs/sequelize_db");
+const UserSocket = sequelizeDb.userSocket;
 let socketIO;
 
-function init(server) {
+async function init(server) {
   console.log('#################################BARCODE SOKET IO############################################');
+
+  //must online all socket when server restarted;
+ await UserSocket.update({is_online:false},{where:{}}).catch((ex)=>{});
 
   socketIO = new Server(server);
 

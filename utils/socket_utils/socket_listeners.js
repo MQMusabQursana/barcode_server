@@ -8,20 +8,16 @@ const auth = require("../../middlewares/auth_middleware");
 const Joi = require("joi");
 
 
-var init = async function(socket, userToken) {
-
+var init = async function (socket, userToken) {
   return new Promise(async function (resolve, reject) {
-
-
     var user = await auth.decodeToken(userToken);
-
-    if(!user){
-     return resolve(false);
+    if (!user) {
+      return resolve(false);
     }
 
     var room;
 
-    switch(user.role){
+    switch (user.role) {
       case consts.UserRoles.employee:
         room = SocketRooms.users;
         break;
@@ -30,7 +26,7 @@ var init = async function(socket, userToken) {
         break;
     }
 
-    const returnValue = await SocketUtils.saveUserSocketId(user.id,room, socket.id);
+    const returnValue = await SocketUtils.saveUserSocketId(user.id, room, socket.id);
 
     if (returnValue.resultStatus == consts.ResultStatus.ok) {
 
@@ -55,24 +51,31 @@ var init = async function(socket, userToken) {
   });
 }
 
-var onDisconnectBeforeInit =  async function(socket){
+var onDisconnectBeforeInit = async function (socket) {
   console.log("onDisconnectBeforeInit");
   socket.removeAllListeners();
 }
 
-var onDisconnectAfterInti =  async function(socket, userToken) {
+var onDisconnectAfterInti = async function (socket, userToken) {
   console.log('onDisconnectAfterInti ' + socket.id);
 
   var user = await auth.decodeToken(userToken);
 
-  if(!user){
-   return false;
+  if (!user) {
+    return false;
   }
 
+
+
+
   const userId = user.id;
+
+  
+
+
   var room;
 
-  switch(user.role){
+  switch (user.role) {
     case consts.UserRoles.employee:
       room = SocketRooms.users;
       break;
@@ -83,29 +86,29 @@ var onDisconnectAfterInti =  async function(socket, userToken) {
 
 
 
-    socket.removeAllListeners();
-    switch (room) {
-      case SocketRooms.managers:
-        console.log('manager deleted from room');
-        socket.leave(SocketRooms.managers);
-        break;
-      case SocketRooms.users:
-        console.log('user deleted from room');
-        socket.leave(SocketRooms.users);
-        break;
-    }
-    const returnValue = await SocketUtils.disconnectUserSocket(userId);
-    console.log("disconnectUserSocket -> " + JSON.stringify(returnValue));
+  socket.removeAllListeners();
+  switch (room) {
+    case SocketRooms.managers:
+      console.log('manager deleted from room');
+      socket.leave(SocketRooms.managers);
+      break;
+    case SocketRooms.users:
+      console.log('user deleted from room');
+      socket.leave(SocketRooms.users);
+      break;
+  }
+  const returnValue = await SocketUtils.disconnectUserSocket(userId);
+  console.log("disconnectUserSocket -> " + JSON.stringify(returnValue));
 }
 
 var onUserLocationChanged = async function (userId, lat, lng, angle) {
   return new Promise(async function (resolve, reject) {
-    try{
+    try {
       const socketIO = require("./socket_server").getio();
-      socketIO.in(SocketRooms.managers).emit(SocketEvents.onUserLocationChanged,{ user_id: userId,  lat: lat, lng: lng, angle: angle });
+      socketIO.in(SocketRooms.managers).emit(SocketEvents.onUserLocationChanged, { user_id: userId, lat: lat, lng: lng, angle: angle });
       console.log("sent in SocketRooms.managers -> " + JSON.stringify({ user_id: userId, lat: lat, lng: lng, angle: angle }));
       return resolve({ resultStatus: consts.ResultStatus.ok });
-    }catch(ex){
+    } catch (ex) {
       return resolve({ resultStatus: consts.ResultStatus.notOk });
     }
   });

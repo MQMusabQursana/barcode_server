@@ -64,7 +64,7 @@ const pushNotification = async (req, res) => {
             resultStatus: consts.ResultStatus.notOk,
             error: error.details[0].message.toString()
         };
-        functionsUtils.loggerInfo("setStatusValue  -> Error  -> " + JSON.stringify(returnValue));
+        functionsUtils.loggerInfo("setStatusValue -> Error  -> " + JSON.stringify(returnValue));
         return res.status(consts.ResultStatus.notOk).json(returnValue);
 
     }
@@ -232,7 +232,33 @@ var setStatusValue = async (req, res, next) => {
 }
 
 
+
+var readAll = async (req, res, next) => {
+    functionsUtils.loggerInfo("readAll ->  --- " + JSON.stringify(req.body));
+    const params = {
+        "is_readed": true
+    }
+
+    const user = req.body.user;
+    await Notivication.update(params, {
+        where: { push_for_user_id: user.id }
+    }).then(async (updatedNotificationResult) => {
+        const returnValue = {
+            resultStatus: consts.ResultStatus.ok,
+        }
+        return res.status(returnValue.resultStatus).json(returnValue);
+    }).catch((error) => {
+        const returnValue = {
+            resultStatus: error.name == consts.ExeptionsCode.SequelizeConnectionError ? consts.ResultStatus.pressureOnServer : consts.ResultStatus.notOk,
+            error: error
+        };
+        functionsUtils.loggerInfo("setStatusValue  -> error -> " + JSON.stringify(returnValue) + " ---" + JSON.stringify(error));
+        return res.status(consts.ResultStatus.notOk).json(returnValue);
+    });
+}
+
+
 module.exports = {
     pushNotification,
-    setStatusValue,
+    setStatusValue,readAll
 }

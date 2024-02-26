@@ -7,9 +7,11 @@ const Notification = sequelizeDb.notivication;
 
 const getAll = async (req, res,next) => {
     functionsUtils.loggerInfo("getAll -> " + JSON.stringify(req.body));
+    const user = req.body.user;
     Notification.findAll({
         where:{
-            is_deleted:false
+            is_deleted:false,
+            push_for_user_id:user.id
         },
         order: [['createdAt', 'DESC']]
 

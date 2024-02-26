@@ -28,5 +28,4 @@ const AppVersion = sequelize.define("_app_version",{
 });
 
 return AppVersion;
-
 }
