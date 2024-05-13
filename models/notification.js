@@ -18,6 +18,7 @@ module.exports =
             push_for_user_id: {
                 type: DataTypes.STRING,
                 allowNull: false,
+                
             },
             user_name: {
                 type: DataTypes.STRING,

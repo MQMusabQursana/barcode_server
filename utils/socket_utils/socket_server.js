@@ -12,10 +12,12 @@ const UserSocket = sequelizeDb.userSocket;
 let socketIO;
 
 async function init(server) {
-  console.log('#################################BARCODE SOKET IO############################################');
+  console.log('#################################BARCODE x SOKET x IO############################################');
 
   //must online all socket when server restarted;
- await UserSocket.update({is_online:false},{where:{}}).catch((ex)=>{});
+ await UserSocket.update({is_online:false},{where:{}}).catch((ex)=>{
+  console.log(ex);
+ });
 
   socketIO = new Server(server);
 

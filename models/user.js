@@ -31,7 +31,7 @@ const User = sequelize.define("_user",{
         allowNull: true,
     },
     token:{
-        type:DataTypes.STRING,
+        type:DataTypes.TEXT,
         allowNull: false,
     },
 });

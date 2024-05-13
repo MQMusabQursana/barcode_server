@@ -9,7 +9,8 @@ const sequelize = new Sequelize(consts.DB.database, consts.DB.user, consts.DB.pa
   dialect: 'mysql',
   port:consts.DB.port,
   
-  operatorsAliases: false,
+  operatorsAliases: 0,
+
   pool: {
     max: 5,
     min: 0,
@@ -96,22 +97,22 @@ db.userLocation.belongsTo(db.user, {
 
 
 // --------------
-db.user.hasMany(db.notivication, {
-  foreignKey: {
-    allowNull: false,
-    name: "push_for_user_id"
-  },
-  as: "notivications",
-  onDelete: "CASCADE",
-  onUpdate: "CASCADE"
-});
+// db.user.hasMany(db.notivication, {
+//   foreignKey: {
+//     allowNull: true,
+//     name: "push_for_user_id"
+//   },
+//   as: "notivications",
+//   onDelete: "CASCADE",
+//   onUpdate: "CASCADE"
+// });
 
-db.notivication.belongsTo(db.user, {
-  foreignKey: "push_for_user_id",
-  as: "notivication_user",
-  onDelete: "CASCADE",
-  onUpdate: "CASCADE"
-});
+// db.notivication.belongsTo(db.user, {
+//   foreignKey: "push_for_user_id",
+//   as: "notivication_user",
+//   onDelete: "CASCADE",
+//   onUpdate: "CASCADE"
+// });
 
 
 db.user.hasMany(db.userZone, {
