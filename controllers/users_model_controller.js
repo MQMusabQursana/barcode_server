@@ -218,12 +218,12 @@ const access = async (req, res) => {
 
     const schema = Joi.object({
         id: Joi.string().required(),
-        name: Joi.string().required(),
-        phone: Joi.string().required(),
-        email: Joi.string().email().required(),
-        role: Joi.string().required(),
-        token: Joi.string().required(),
-        regions: Joi.array().allow(),
+        name: Joi.string().allow(null).allow(''),
+        phone: Joi.string().allow(null).allow(''),
+        email: Joi.string().email().allow(null).allow(''),
+        role: Joi.string().allow(null).allow(''),
+        token: Joi.string().allow(null).allow(''),
+        regions: Joi.array().allow(null),
         user: Joi.allow()
     });
 
