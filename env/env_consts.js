@@ -1,11 +1,15 @@
+
+//hamad
 // const DB = {
-//     host: "127.0.0.1",
-//     user:"mysql_user",
-//     password:"Mysql@123",
-//     port: "3306",
-//    database: "barcode",
+//     host: "localhost",
+//   user: "root",
+//   port:3306,
+//   password: "",
+//   database: "barcode",
 // }
 
+
+//my
 const DB = {
     host: "localhost",
   user: "user",

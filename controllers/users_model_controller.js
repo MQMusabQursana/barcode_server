@@ -6,6 +6,7 @@ const Bcrypt = require('bcryptjs');
 const Joi = require("joi");
 const auth = require("../middlewares/auth_middleware");
 const SocketListeners = require("../utils/socket_utils/socket_listeners");
+const fetch = require('node-fetch');
 
 
 //create main models
@@ -86,7 +87,7 @@ const updateLocation = async (req, res) => {
         lat: Joi.number().required(),
         lng: Joi.number().required(),
         angle: Joi.number().required(),
-        user_job_state: Joi.number().valid(consts.UserJobState.free,consts.UserJobState.busy,consts.UserJobState.done,).required(),
+        user_job_state: Joi.number().valid(consts.UserJobState.free, consts.UserJobState.busy, consts.UserJobState.done,).required(),
         user: Joi.allow()
     });
 
@@ -109,7 +110,7 @@ const updateLocation = async (req, res) => {
         lng: lng,
         angle: angle,
         angle: angle,
-        user_job_state:user_job_state
+        user_job_state: user_job_state
     };
 
 
@@ -118,7 +119,7 @@ const updateLocation = async (req, res) => {
             resultStatus: consts.ResultStatus.ok,
         };
         console.log("updateLocation -> done -> " + JSON.stringify(returnValue));
-        await SocketListeners.onUserLocationChanged(user.id, lat, lng, angle,user_job_state);
+        await SocketListeners.onUserLocationChanged(user.id, lat, lng, angle, user_job_state);
         res.json(returnValue);
     }).catch((updatedError) => {
         const returnValue = {
@@ -217,6 +218,10 @@ const access = async (req, res) => {
         role,
         token,
         regions,
+        customer_access,
+        type_access,
+        id_access,
+
     } = req.body;
 
 
@@ -228,10 +233,13 @@ const access = async (req, res) => {
         role: Joi.string().allow(null).allow(''),
         token: Joi.string().allow(null).allow(''),
         regions: Joi.array().allow(null),
-        user: Joi.allow()
+        customer_access: Joi.string().allow(null).allow(''),
+        type_access: Joi.string().allow(null).allow(''),
+        id_access: Joi.string().allow(null).allow(''),
+        user: Joi.allow(),
     });
 
-  
+
 
     const { error } = schema.validate(req.body);
 
@@ -245,63 +253,106 @@ const access = async (req, res) => {
     }
 
 
-    var zonesParams = [];
-    for (var i = 0; i < (regions??[]).length; i++) {
-        var zone = regions[i];
-        zonesParams.push({
-            user_id: id,
-            region_id: zone,
+    let barcodeRes;
+    try {
+         barcodeRes = await fetch(`https://192.168.1.88:80/api/Registration/GetProfile?EmailOrHemCode=${id}`, {
+            method: 'GET',
+            rejectUnauthorized: false,
+            headers: {
+                'Accept': 'application/json',
+                'Content-Type': 'application/json',
+                'Accept-Encoding': 'gzip, deflate, br',
+                'Authorization': `Bearer ${token}`,
+                "Cookie": `Customer=${customer_access}; ${type_access}=${id_access}; Bearer=${token}`
+            },
+        });
+    } catch (ex) {
+        return res.status(consts.ResultStatus.notOk).json({
+            resultStatus: consts.ResultStatus.somethingWrong,
+            result: "somethingWrong " + ex
         });
     }
 
-    const parms = {
-        id: id,
-        name: name,
-        phone: phone,
-        email: email,
-        role: role,
-        token: token,
-    }
+    console.log(`https://192.168.1.88:80/api/Registration/GetProfile?EmailOrHemCode=${id}`);
+    console.log({
+        'Accept': 'application/json',
+        'Content-Type': 'application/json',
+        'Accept-Encoding': 'gzip, deflate, br',
+        'Authorization': `Bearer ${token}`,
+        "Cookie": `Customer=${customer_access}; ${type_access}=${id_access}; Bearer=${token}`
+    });
+    console.log(barcodeRes);
+
+
+    if (barcodeRes?.status == consts.ResultStatus.ok) {
 
 
 
-    User.upsert(parms, {
-        include: ['zones']
-    }).then((createdUserResult) => {
-        const result = functionsUtils.toPlain(createdUserResult[0]);
-        UserZone.destroy({
-            where: { user_id: id }
-        }).then(async (destroyResult) => {
-            UserZone.bulkCreate(zonesParams).then(async (zonesResult) => {
-                var jwt = require('jsonwebtoken');
-                var key = `${result.id.toString()}_datetime_${Date.now()}`;
-                jwt.sign(key, consts.jwtSecrtKey, async (jwtError, token) => {
-                    if (!jwtError) {
-                        const authResult = await auth.saveToken(result.id, token);
-                        if (authResult.resultStatus == consts.ResultStatus.ok) {
-                            const userRow = {
-                                ...result,
-                                token: token
-                            };
-                            console.log("access -> done -> " + JSON.stringify(userRow));
-                            res.json({
-                                resultStatus: consts.ResultStatus.ok,
-                                result: userRow
-                            });
+        var zonesParams = [];
+        for (var i = 0; i < (regions ?? []).length; i++) {
+            var zone = regions[i];
+            zonesParams.push({
+                user_id: id,
+                region_id: zone,
+            });
+        }
+
+        const parms = {
+            id: id,
+            name: name,
+            phone: phone,
+            email: email,
+            role: role,
+            token: token,
+        }
+
+
+
+        User.upsert(parms, {
+            include: ['zones']
+        }).then((createdUserResult) => {
+            const result = functionsUtils.toPlain(createdUserResult[0]);
+            UserZone.destroy({
+                where: { user_id: id }
+            }).then(async (destroyResult) => {
+                UserZone.bulkCreate(zonesParams).then(async (zonesResult) => {
+                    var jwt = require('jsonwebtoken');
+                    var key = `${result.id.toString()}_datetime_${Date.now()}`;
+                    jwt.sign(key, consts.jwtSecrtKey, async (jwtError, token) => {
+                        if (!jwtError) {
+                            const authResult = await auth.saveToken(result.id, token);
+                            if (authResult.resultStatus == consts.ResultStatus.ok) {
+                                const userRow = {
+                                    ...result,
+                                    token: token
+                                };
+                                console.log("access -> done -> " + JSON.stringify(userRow));
+                                res.json({
+                                    resultStatus: consts.ResultStatus.ok,
+                                    result: userRow
+                                });
+                            } else {
+                                console.log("access -> jwt -> saveToken -> error -> " + JSON.stringify(authResult));
+                                res.status(consts.ResultStatus.somethingWrong).json({
+                                    resultStatus: consts.ResultStatus.somethingWrong,
+                                    error: jwtError,
+                                });
+                            }
                         } else {
-                            console.log("access -> jwt -> saveToken -> error -> " + JSON.stringify(authResult));
+                            console.log("access -> jwt -> error -> " + JSON.stringify(jwtError));
                             res.status(consts.ResultStatus.somethingWrong).json({
                                 resultStatus: consts.ResultStatus.somethingWrong,
                                 error: jwtError,
                             });
                         }
-                    } else {
-                        console.log("access -> jwt -> error -> " + JSON.stringify(jwtError));
-                        res.status(consts.ResultStatus.somethingWrong).json({
-                            resultStatus: consts.ResultStatus.somethingWrong,
-                            error: jwtError,
-                        });
-                    }
+                    });
+                }).catch((updatedError) => {
+                    const returnValue = {
+                        resultStatus: updatedError.name == consts.ExeptionsCode.SequelizeConnectionError ? consts.ResultStatus.pressureOnServer : consts.ResultStatus.notOk,
+                        error: updatedError
+                    };
+                    console.log("updateFcmToken -> update -> error -> " + JSON.stringify(returnValue) + " ---" + JSON.stringify(updatedError));
+                    res.json(returnValue);
                 });
             }).catch((updatedError) => {
                 const returnValue = {
@@ -311,23 +362,21 @@ const access = async (req, res) => {
                 console.log("updateFcmToken -> update -> error -> " + JSON.stringify(returnValue) + " ---" + JSON.stringify(updatedError));
                 res.json(returnValue);
             });
-        }).catch((updatedError) => {
-            const returnValue = {
-                resultStatus: updatedError.name == consts.ExeptionsCode.SequelizeConnectionError ? consts.ResultStatus.pressureOnServer : consts.ResultStatus.notOk,
-                error: updatedError
-            };
-            console.log("updateFcmToken -> update -> error -> " + JSON.stringify(returnValue) + " ---" + JSON.stringify(updatedError));
-            res.json(returnValue);
-        });
 
-    }).catch((createdUserError) => {
-        console.log("access -> error -> " + JSON.stringify(createdUserError));
-        const statusCode = createdUserError.name == consts.ExeptionsCode.SequelizeConnectionError ? consts.ResultStatus.pressureOnServer : consts.ResultStatus.notOk;
-        res.status(statusCode).json({
-            resultStatus: statusCode,
-            error: createdUserError,
+        }).catch((createdUserError) => {
+            console.log("access -> error -> " + JSON.stringify(createdUserError));
+            const statusCode = createdUserError.name == consts.ExeptionsCode.SequelizeConnectionError ? consts.ResultStatus.pressureOnServer : consts.ResultStatus.notOk;
+            res.status(statusCode).json({
+                resultStatus: statusCode,
+                error: createdUserError,
+            });
         });
-    });
+    } else {
+        res.status(consts.ResultStatus.unauthorized).json({
+            resultStatus: consts.ResultStatus.unauthorized,
+            result: "Invalid Barcode Token"
+        });
+    }
 }
 
 module.exports = {
